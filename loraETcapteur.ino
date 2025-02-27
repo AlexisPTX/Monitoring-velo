@@ -11,12 +11,14 @@ LiquidCrystal_I2C lcd(0x20, 20, 4);
 OneWire oneWire(4);
 DallasTemperature sensors(&oneWire);
 
-// Configuration LoRa
+// Configuration LoRa avec OTAA
 #define debugSerial SerialUSB
 #define loraSerial Serial2
-const uint8_t devAddr[4] = { 0x26, 0x0B, 0xC7, 0x4E };
-const uint8_t appSKey[16] = { 0x5B, 0xF9, 0x8E, 0x65, 0xC6, 0x37, 0xC8, 0x5E, 0x87, 0x91, 0xB4, 0x99, 0x93, 0xFB, 0x1E, 0xE1 };
-const uint8_t nwkSKey[16] = { 0x5A, 0x2B, 0x52, 0xD9, 0xC9, 0xAE, 0xDF, 0x10, 0x35, 0x7B, 0xA6, 0xAD, 0xDC, 0xDA, 0x3E, 0x57 };
+
+// OTAA Keys - Utilisez vos propres clés!
+const uint8_t devEUI[8]  = {0x70, 0xB3, 0xD5, 0x7E, 0xD0, 0x06, 0xE8, 0x9C};  // Remplacez par votre DevEUI
+const uint8_t appEUI[8]  = {0x27, 0x07, 0x20, 0x03, 0x27, 0x07, 0x20, 0x03};  // Remplacez par votre AppEUI
+const uint8_t appKey[16] = {0x7F, 0x6C, 0x96, 0x3D, 0xCE, 0x01, 0x62, 0x5C, 0xBB, 0x5A, 0x3D, 0x7D, 0x7E, 0x51, 0x0D, 0xBE};  // Remplacez par votre AppKey
 
 const byte RATE_SIZE = 4;
 byte rates[RATE_SIZE];
@@ -51,10 +53,10 @@ void setup() {
     particleSensor.setPulseAmplitudeRed(0x7F);
     particleSensor.setPulseAmplitudeGreen(0);
 
-    // Initialisation LoRaWAN
+    // Initialisation LoRaWAN avec OTAA
     LoRaBee.setDiag(debugSerial);
-    if (LoRaBee.initABP(loraSerial, devAddr, appSKey, nwkSKey, true)) {
-        debugSerial.println("Connexion LoRa OK");
+    if (LoRaBee.initOTA(loraSerial, devEUI, appEUI, appKey, true)) {
+        debugSerial.println("Connexion LoRa OK (OTAA)");
     } else {
         debugSerial.println("Echec connexion LoRa");
     }
@@ -63,7 +65,7 @@ void setup() {
 }
 
 void readSensors() {
-    // Lecture temperature
+    // Lecture température
     sensors.requestTemperatures();
     float tempC = sensors.getTempCByIndex(0);
 
@@ -85,7 +87,7 @@ void readSensors() {
     }
     lastIRValue = irValue;
 
-    // Affichage
+    // Affichage sur LCD
     lcd.setCursor(0, 0);
     lcd.print("Temp: ");
     lcd.print(tempC);
