@@ -100,7 +100,7 @@ fun Application.module() {
                 }
             }
 
-            //call.respond(HttpStatusCode.OK, "Données: ${result.joinToString(", ")}")
+            call.respond(HttpStatusCode.OK, "Données: ${result.joinToString(", ")}")
         }
     }
 }

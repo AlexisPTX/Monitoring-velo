@@ -8,11 +8,9 @@ import androidx.compose.ui.text.input.*
 import androidx.compose.ui.unit.*
 import io.ktor.http.*
 import io.ktor.client.HttpClient
-import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.HttpResponse
-import io.ktor.client.network.sockets.ConnectTimeoutException
 import kotlinx.coroutines.launch
 import io.ktor.serialization.kotlinx.json.*
 import org.jetbrains.compose.ui.tooling.preview.Preview
@@ -21,7 +19,7 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 @Composable
 @Preview
 fun App() {
-    MaterialTheme {
+    AppTheme {
         var isAuthenticated by remember { mutableStateOf(false) }
         var login by remember { mutableStateOf("") }
         var password by remember { mutableStateOf("") }
@@ -100,24 +98,17 @@ fun AuthScreen(
             Spacer(modifier = Modifier.height(16.dp))
         }
 
-        Button(onClick = onAuthenticate, modifier = Modifier.fillMaxWidth()) {
+        Button(onClick = onAuthenticate, modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(
+                backgroundColor = MaterialTheme.colors.primary,
+                contentColor = MaterialTheme.colors.onPrimary
+            )
+        ) {
             Text(text = "Se connecter")
         }
     }
 }
 
-@Composable
-fun AuthenticatedScreen() {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text("Bienvenue, vous êtes connecté !", style = MaterialTheme.typography.h5)
-    }
-}
 
 // Fonction pour authentifier l'utilisateur
 suspend fun authenticateUser(login: String, password: String): String {

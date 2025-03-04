@@ -43,6 +43,14 @@ kotlin {
             implementation(libs.androidx.lifecycle.viewmodel)
             implementation(libs.androidx.lifecycle.runtime.compose)
             implementation(projects.shared)
+            implementation(libs.compose.multiplatform.chart)
+            implementation(libs.kotlinx.datetime)
+            implementation(libs.multiplatform.settings)
+            implementation(libs.multiplatform.settings.no.arg)
+
+
+
+
 
             // Ktor Client Dependencies
             implementation(libs.ktor.client.core)
@@ -86,7 +94,8 @@ android {
 }
 
 dependencies {
-    implementation(libs.androidx.media3.common.ktx)
+    implementation(libs.russhwolf.multiplatform.settings)
+    implementation(libs.russhwolf.multiplatform.settings.no.arg)
     debugImplementation(compose.uiTooling)
 }
 
