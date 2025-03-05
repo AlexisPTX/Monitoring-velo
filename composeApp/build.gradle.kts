@@ -95,7 +95,6 @@ android {
 
 dependencies {
     implementation(libs.russhwolf.multiplatform.settings)
-    implementation(libs.russhwolf.multiplatform.settings.no.arg)
     debugImplementation(compose.uiTooling)
 }
 

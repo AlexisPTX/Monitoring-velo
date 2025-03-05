@@ -6,15 +6,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.text.input.*
 import androidx.compose.ui.unit.*
-import io.ktor.http.*
-import io.ktor.client.HttpClient
+import io.ktor.client.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
-import io.ktor.client.statement.HttpResponse
-import kotlinx.coroutines.launch
+import io.ktor.client.statement.*
+import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.ui.tooling.preview.Preview
-
 
 @Composable
 @Preview
@@ -24,6 +23,7 @@ fun App() {
         var login by remember { mutableStateOf("") }
         var password by remember { mutableStateOf("") }
         var errorMessage by remember { mutableStateOf("") }
+        var isRegistering by remember { mutableStateOf(false) }
 
         val scope = rememberCoroutineScope()
 
@@ -37,12 +37,18 @@ fun App() {
                     login = login,
                     password = password,
                     errorMessage = errorMessage,
+                    isRegistering = isRegistering,
                     onLoginChange = { login = it },
                     onPasswordChange = { password = it },
+                    onToggleMode = { isRegistering = !isRegistering },
                     onAuthenticate = {
                         scope.launch {
-                            val result = authenticateUser(login, password)
-                            if (result == "success") {
+                            val result = if (isRegistering) {
+                                registerUser(login, password)
+                            } else {
+                                authenticateUser(login, password)
+                            }
+                            if (result == "success" || result == "Compte créé") {
                                 isAuthenticated = true
                                 errorMessage = ""
                             } else {
@@ -52,7 +58,12 @@ fun App() {
                     }
                 )
             } else {
-                AuthenticatedScreen()
+                MainScreen(onLogout = {
+                    isAuthenticated = false
+                    login = ""
+                    password = ""
+                    errorMessage = ""
+                })
             }
         }
     }
@@ -63,8 +74,10 @@ fun AuthScreen(
     login: String,
     password: String,
     errorMessage: String,
+    isRegistering: Boolean,
     onLoginChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
+    onToggleMode: () -> Unit,
     onAuthenticate: () -> Unit
 ) {
     Column(
@@ -73,7 +86,10 @@ fun AuthScreen(
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(text = "Authentification", style = MaterialTheme.typography.h5)
+        Text(
+            text = if (isRegistering) "Inscription" else "Authentification",
+            style = MaterialTheme.typography.h5
+        )
         Spacer(modifier = Modifier.height(32.dp))
 
         OutlinedTextField(
@@ -98,19 +114,25 @@ fun AuthScreen(
             Spacer(modifier = Modifier.height(16.dp))
         }
 
-        Button(onClick = onAuthenticate, modifier = Modifier.fillMaxWidth(),
+        Button(
+            onClick = onAuthenticate,
+            modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(
                 backgroundColor = MaterialTheme.colors.primary,
                 contentColor = MaterialTheme.colors.onPrimary
             )
         ) {
-            Text(text = "Se connecter")
+            Text(text = if (isRegistering) "Créer un compte" else "Se connecter")
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        TextButton(onClick = onToggleMode) {
+            Text(if (isRegistering) "Déjà un compte ? Se connecter" else "Créer un compte")
         }
     }
 }
 
-
-// Fonction pour authentifier l'utilisateur
 suspend fun authenticateUser(login: String, password: String): String {
     val client = HttpClient() {
         install(ContentNegotiation) {
@@ -126,8 +148,7 @@ suspend fun authenticateUser(login: String, password: String): String {
 
         if (response.status == HttpStatusCode.OK) {
             "success"
-        }
-        else {
+        } else {
             "Identifiants incorrects"
         }
     } catch (e: Exception) {
@@ -135,3 +156,25 @@ suspend fun authenticateUser(login: String, password: String): String {
     }
 }
 
+suspend fun registerUser(login: String, password: String): String {
+    val client = HttpClient() {
+        install(ContentNegotiation) {
+            json()
+        }
+    }
+
+    return try {
+        val response: HttpResponse = client.post("http://$IP_MACHINE:8080/register") {
+            contentType(ContentType.Application.Json)
+            setBody(UserCredentials(login, password))
+        }
+
+        when (response.status) {
+            HttpStatusCode.Created -> "Compte créé"
+            HttpStatusCode.Conflict -> "Login déjà utilisé"
+            else -> "Erreur inconnue"
+        }
+    } catch (e: Exception) {
+        "Serveur éteint"
+    }
+}

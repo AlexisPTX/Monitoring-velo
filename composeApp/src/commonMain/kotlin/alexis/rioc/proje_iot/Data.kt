@@ -51,11 +51,11 @@ fun DataScreen() {
     var filteredData by remember { mutableStateOf(generateData(selectedOption, currentDate)) }
 
     Column(
-        modifier = Modifier.fillMaxHeight(0.8f),
+        modifier = Modifier.fillMaxHeight(),
         verticalArrangement = Arrangement.spacedBy(5.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("Activité", style = MaterialTheme.typography.h6)
+        Text("Activité", style = MaterialTheme.typography.h6, modifier = Modifier.padding(top = 5.dp))
 
         TabSelector(selectedOption) { option ->
             selectedOption = option

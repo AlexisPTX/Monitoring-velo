@@ -13,6 +13,8 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import org.mindrot.jbcrypt.BCrypt
 import io.ktor.server.request.receive
 import io.ktor.serialization.kotlinx.json.*
+import io.ktor.server.request.receiveText
+import kotlinx.serialization.json.Json
 
 
 fun main() {
@@ -28,14 +30,6 @@ fun addTestUser() {
         Users.insert {
             it[login] = "alexis"
             it[passwordHash] = hashPassword("example")
-        }
-
-        // Ajouter une donnée de test pour cet utilisateur
-        Data.insert {
-            it[userLogin] = "alexis"
-            it[value] = "25.5"
-            it[sensor] = "temperature_sensor"
-            it[time] = System.currentTimeMillis()
         }
     }
 }
@@ -91,6 +85,32 @@ fun Application.module() {
             }
         }
 
+        post("/register") {
+            val userCredentials = call.receive<UserCredentials>()
+
+            val existingUser = transaction {
+                Users.select { Users.login eq userCredentials.login }
+                    .singleOrNull()
+            }
+
+            if (existingUser != null) {
+                call.respond(HttpStatusCode.Conflict, "Login déjà utilisé")
+            } else {
+                transaction {
+                    Users.insert {
+                        it[login] = userCredentials.login
+                        it[passwordHash] = hashPassword(userCredentials.password)
+                    }
+                }
+                call.respond(HttpStatusCode.Created, "Compte créé avec succès")
+            }
+        }
+
+        post("/data") {
+            val jsonString = call.receiveText()
+            processJson(jsonString)
+        }
+
         get("/") {
             // Simuler la récupération des données
             val result = transaction {
@@ -105,6 +125,31 @@ fun Application.module() {
     }
 }
 
+fun processJson(inputJson: String) {
+    val json = Json { ignoreUnknownKeys = true }
+    val parsedData = json.decodeFromString<UplinkMessage>(inputJson)
+
+    // Extraire uniquement ce qui t'intéresse
+    val bpm = parsedData.uplink_message.decoded_payload.bpm
+    val temperature = parsedData.uplink_message.decoded_payload.temperature
+    val vitesse = parsedData.uplink_message.decoded_payload.vitesse
+    val device = parsedData.end_device_ids.device_id
+
+    println("BPM: $bpm, Temperature: $temperature, Vitesse: $vitesse")
+
+    val currentTime = System.currentTimeMillis()
+
+    transaction {
+        Data.insert {
+            it[userLogin] = "alexis"  // Remplacer par le login utilisateur approprié
+            it[this.device] = device
+            it[this.bpm] = bpm
+            it[this.temperature] = temperature
+            it[this.vitesse] = vitesse
+            it[time] = currentTime
+        }
+    }
+}
 
 // Table Utilisateur
 object Users : Table("users") {
@@ -115,10 +160,12 @@ object Users : Table("users") {
 
 // Table Données
 object Data : Table("data") {
-    val id = integer("id").autoIncrement()
+    private val id = integer("id").autoIncrement()
     val userLogin = varchar("user_login", 50) references Users.login
-    val value = varchar("value", 255)
-    val sensor = varchar("sensor", 100)
+    val device = varchar("device_id", 255)
+    val bpm = integer("bpm")
+    val temperature = integer("temperature")
+    val vitesse = integer("vitesse")
     val time = long("temps") // Timestamp UNIX
     override val primaryKey = PrimaryKey(id)
 }

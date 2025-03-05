@@ -42,7 +42,6 @@ uiToolingPreview = "1.7.8"
 composeMultiplatformChart = "2.1.0"
 databindingCompiler = "8.8.1"
 multiplatformSettingsVersion = "1.3.0"
-multiplatformSettingsNoArgVersion = "1.3.0"
 
 [libraries]
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastorePreferences" }
@@ -95,7 +94,6 @@ androidx-navigation-runtime-android = { group = "androidx.navigation", name = "n
 compose-multiplatform-chart = { group = "io.github.maximilianproell", name = "compose-multiplatform-chart", version.ref = "composeMultiplatformChart" }
 androidx-databinding-compiler = { group = "androidx.databinding", name = "databinding-compiler", version.ref = "databindingCompiler" }
 russhwolf-multiplatform-settings = { group = "com.russhwolf", name = "multiplatform-settings", version.ref = "multiplatformSettingsVersion" }
-russhwolf-multiplatform-settings-no-arg = { group = "com.russhwolf", name = "multiplatform-settings-no-arg", version.ref = "multiplatformSettingsNoArgVersion" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

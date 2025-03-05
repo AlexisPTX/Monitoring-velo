@@ -1,5 +1,6 @@
 package alexis.rioc.proje_iot
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -43,8 +44,7 @@ fun HomeScreen() {
     ) {
         Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 16.dp),
+                .fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -168,17 +168,11 @@ fun DayCell(
 ) {
     val isSelectedPast = selectedPastDays.contains(day)
     val isSelectedFuture = selectedFutureDays.contains(day)
-    val backgroundColor = when {
-        isSelectedPast -> Color.Green
-        isSelectedFuture -> Color.Yellow
-        day == today -> ColorDarkBlue
-        else -> Color.LightGray
-    }
+    val isToday = day == today
 
     Box(
         modifier = Modifier
-            .fillMaxSize() // Remplit toute la cellule
-            .background(backgroundColor, shape = RoundedCornerShape(10.dp))
+            .fillMaxSize()
             .clickable {
                 if (day <= today) {
                     if (isSelectedPast) selectedPastDays.remove(day) else selectedPastDays.add(day)
@@ -192,13 +186,43 @@ fun DayCell(
                     selectedFutureDays.map { it.toString() }
                 )
             }
-            .padding(8.dp),
+            .padding(4.dp),
         contentAlignment = Alignment.Center
     ) {
-        Text(text = day.dayOfMonth.toString(), fontSize = 16.sp)
-    }
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val path = androidx.compose.ui.graphics.Path()
 
+            if (isToday && (isSelectedPast || isSelectedFuture)) {
+                // Triangle vert pour la moitié supérieure gauche
+                path.moveTo(0f, 0f) // coin haut gauche
+                path.lineTo(size.width, 0f) // coin haut droit
+                path.lineTo(0f, size.height) // coin bas gauche
+                path.close()
+                drawPath(path, Color.Green)
+
+                path.reset()
+
+                // Triangle bleu pour la moitié inférieure droite
+                path.moveTo(size.width, 0f) // coin haut droit
+                path.lineTo(size.width, size.height) // coin bas droit
+                path.lineTo(0f, size.height) // coin bas gauche
+                path.close()
+                drawPath(path, ColorDarkBlue)
+            } else {
+                val color = when {
+                    isSelectedPast -> Color.Green
+                    isSelectedFuture -> Color.Yellow
+                    isToday -> ColorDarkBlue
+                    else -> Color.LightGray
+                }
+                drawRect(color)
+            }
+        }
+
+        Text(text = day.dayOfMonth.toString(), fontSize = 16.sp, color = Color.Black)
+    }
 }
+
 
 fun Month.toFrench(): String {
     val months = listOf(
