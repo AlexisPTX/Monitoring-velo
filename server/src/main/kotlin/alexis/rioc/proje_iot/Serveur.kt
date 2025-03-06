@@ -135,8 +135,6 @@ fun processJson(inputJson: String) {
     val vitesse = parsedData.uplink_message.decoded_payload.vitesse
     val device = parsedData.end_device_ids.device_id
 
-    println("BPM: $bpm, Temperature: $temperature, Vitesse: $vitesse")
-
     val currentTime = System.currentTimeMillis()
 
     transaction {

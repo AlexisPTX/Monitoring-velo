@@ -48,7 +48,11 @@ enum class DateRangeOption {
 fun DataScreen() {
     var selectedOption by remember { mutableStateOf(DateRangeOption.Month) }
     var currentDate by remember { mutableStateOf(Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())) }
-    var filteredData by remember { mutableStateOf(generateData(selectedOption, currentDate)) }
+
+    // Crée des variables d'état pour stocker les données générées
+    var bpmData by remember { mutableStateOf(generateData(selectedOption, currentDate)) }
+    var temperatureData by remember { mutableStateOf(generateData(selectedOption, currentDate)) }
+    var speedData by remember { mutableStateOf(generateData(selectedOption, currentDate)) }
 
     Column(
         modifier = Modifier.fillMaxHeight(),
@@ -57,54 +61,26 @@ fun DataScreen() {
     ) {
         Text("Activité", style = MaterialTheme.typography.h6, modifier = Modifier.padding(top = 5.dp))
 
+        // Sélection de l'option de date (semaine/mois)
         TabSelector(selectedOption) { option ->
             selectedOption = option
             currentDate = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
-            filteredData = generateData(selectedOption, currentDate) // Met à jour les données
+            // Met à jour les données lorsque l'option change
+            bpmData = generateData(selectedOption, currentDate)
+            temperatureData = generateData(selectedOption, currentDate)
+            speedData = generateData(selectedOption, currentDate)
         }
 
-        NavigationButtons(selectedOption, currentDate, onDateChange = { newDate ->
+        // Navigation des dates
+        NavigationButtons(selectedOption, currentDate) { newDate ->
             currentDate = newDate
-            filteredData = generateData(selectedOption, currentDate) // Met à jour les données
-        })
+            bpmData = generateData(selectedOption, currentDate)  // Met à jour les données
+            temperatureData = generateData(selectedOption, currentDate)
+            speedData = generateData(selectedOption, currentDate)
+        }
 
-        MyChart(filteredData, selectedOption)
-    }
-}
-
-fun generateData(option: DateRangeOption, date: kotlinx.datetime.LocalDateTime): List<Pair<Float, Float>> {
-    return when (option) {
-        DateRangeOption.Week -> {
-            List(7) { index -> (index + 1).toFloat() to Random.nextFloat() * 10 }
-        }
-        DateRangeOption.Month -> {
-            List(30) { index -> (index + 1).toFloat() to Random.nextFloat() * 10 }
-        }
-    }
-}
-
-@Composable
-fun TabSelector(selectedOption: DateRangeOption, onOptionSelected: (DateRangeOption) -> Unit) {
-    TabRow(
-        selectedTabIndex = if (selectedOption == DateRangeOption.Week) 0 else 1,
-        backgroundColor = Color.White,
-        modifier = Modifier.height(30.dp),
-        indicator = { /* Indicateur vide pour enlever la ligne sous l'onglet choisi */ }
-    ) {
-        Tab(
-            selected = selectedOption == DateRangeOption.Week,
-            onClick = { onOptionSelected(DateRangeOption.Week) },
-            modifier = Modifier.background(ColorDarkBlue)
-        ) {
-            Text("Semaine", color = if (selectedOption == DateRangeOption.Week) Color.White else Color.Black)
-        }
-        Tab(
-            selected = selectedOption == DateRangeOption.Month,
-            onClick = { onOptionSelected(DateRangeOption.Month) },
-            modifier = Modifier.background(ColorDarkBlue)
-        ) {
-            Text("Mois", color = if (selectedOption == DateRangeOption.Month) Color.White else Color.Black)
-        }
+        // Affiche le graphique avec les données mises à jour
+        MyChart(bpmData, temperatureData, speedData, selectedOption)
     }
 }
 
@@ -181,32 +157,39 @@ fun NavigationButtons(
     }
 }
 
+
 @Composable
-fun MyChart(data: List<Pair<Float, Float>>, selectedOption: DateRangeOption) {
-    if (data.isEmpty()) return
-
-    val maxX = data.maxOf { it.first }
-    val maxY = data.maxOf { it.second }
-
-    // Configuration de l'axe X en fonction de l'option choisie
-    val xAxisLabels = when (selectedOption) {
-        DateRangeOption.Week -> 7 // 7 jours pour une semaine
-        DateRangeOption.Month -> 30 // 30 jours pour un mois
+fun TabSelector(selectedOption: DateRangeOption, onOptionSelected: (DateRangeOption) -> Unit) {
+    TabRow(
+        selectedTabIndex = if (selectedOption == DateRangeOption.Week) 0 else 1,
+        backgroundColor = Color.White,
+        modifier = Modifier.height(30.dp),
+        indicator = { /* Indicateur vide pour enlever la ligne sous l'onglet choisi */ }
+    ) {
+        Tab(
+            selected = selectedOption == DateRangeOption.Week,
+            onClick = { onOptionSelected(DateRangeOption.Week) },
+            modifier = Modifier.background(ColorDarkBlue)
+        ) {
+            Text("Semaine", color = if (selectedOption == DateRangeOption.Week) Color.White else Color.Black)
+        }
+        Tab(
+            selected = selectedOption == DateRangeOption.Month,
+            onClick = { onOptionSelected(DateRangeOption.Month) },
+            modifier = Modifier.background(ColorDarkBlue)
+        ) {
+            Text("Mois", color = if (selectedOption == DateRangeOption.Month) Color.White else Color.Black)
+        }
     }
+}
 
-    LineChart(
-        modifier = Modifier
-            .fillMaxWidth(0.9f)
-            .fillMaxHeight(0.8f)
-            .padding(5.dp),
-        lineDataSets = listOf(LineDataSet("Données", data.map { DataPoint(it.first, it.second) }, ColorDarkBlue)),
-        maxVisibleYValue = maxY + 5f,
-        xAxisConfig = AxisConfigDefaults.xAxisConfigDefaults().copy(
-            axisColor = Color.Black,
-            allowBorderTextClipping = false,
-            numberOfLabels = xAxisLabels // Nombre de labels adaptés
-        ),
-        yAxisConfig = AxisConfigDefaults.yAxisConfigDefaults().copy(numberOfLabels = 6),
-        lineConfig = LineConfigDefaults.lineConfigDefaults().copy(showLineDots = false)
-    )
+fun generateData(option: DateRangeOption, date: kotlinx.datetime.LocalDateTime): List<Pair<Float, Float>> {
+    return when (option) {
+        DateRangeOption.Week -> {
+            List(7) { index -> (index + 1).toFloat() to Random.nextFloat() * 10 }
+        }
+        DateRangeOption.Month -> {
+            List(30) { index -> (index + 1).toFloat() to Random.nextFloat() * 10 }
+        }
+    }
 }

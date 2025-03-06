@@ -51,6 +51,7 @@ fun App() {
                             if (result == "success" || result == "Compte créé") {
                                 isAuthenticated = true
                                 errorMessage = ""
+                                SessionManager.setUser(login)
                             } else {
                                 errorMessage = result
                             }
@@ -63,6 +64,7 @@ fun App() {
                     login = ""
                     password = ""
                     errorMessage = ""
+                    SessionManager.setUser("")
                 })
             }
         }

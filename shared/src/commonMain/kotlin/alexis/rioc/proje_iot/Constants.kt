@@ -2,7 +2,8 @@ package alexis.rioc.proje_iot
 
 import kotlinx.serialization.Serializable
 
-const val IP_MACHINE = "10.114.44.180"
+const val IP_MACHINE = "10.114.44.180"  //Ecole
+//const val IP_MACHINE = "192.168.1.125"  //Maison
 const val SERVER_PORT = 8080
 
 @Serializable
@@ -33,3 +34,21 @@ data class ApplicationIds(val application_id: String)
 data class UplinkMessageData(
     val decoded_payload: DecodedPayload
 )
+
+@Serializable
+data class SensorData(
+    val bpm: Int,
+    val temperature: Int,
+    val vitesse: Int,
+    val temps: Long
+)
+
+object SessionManager {
+    private var _userLogin: String = ""
+    val userLogin: String
+        get() = _userLogin
+
+    fun setUser(login: String) {
+        _userLogin = login
+    }
+}

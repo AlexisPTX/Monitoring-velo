@@ -1,6 +1,8 @@
 package alexis.rioc.proje_iot
 
+
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.AlertDialog
 import androidx.compose.material.BottomNavigation
 import androidx.compose.material.BottomNavigationItem
 import androidx.compose.material.Button
@@ -71,12 +73,32 @@ fun MainScreen(onLogout: () -> Unit) {
                 }
             }
 
-            // Bouton Déconnexion juste au-dessus de la barre de navigation
+            var showDialog by remember { mutableStateOf(false) }
+
+            if (showDialog) {
+                AlertDialog(
+                    onDismissRequest = { showDialog = false },
+                    title = { Text("Déconnexion") },
+                    text = { Text("Êtes-vous sûr de vouloir vous déconnecter ?") },
+                    confirmButton = {
+                        Button(onClick = {
+                            onLogout()
+                            showDialog = false
+                        }) {
+                            Text("Oui")
+                        }
+                    },
+                    dismissButton = {
+                        Button(onClick = { showDialog = false }) {
+                            Text("Non")
+                        }
+                    }
+                )
+            }
+
             Button(
-                onClick = { onLogout() },
-                modifier = Modifier
-                    .padding(16.dp)
-                    .fillMaxWidth()
+                onClick = { showDialog = true },
+                modifier = Modifier.padding(16.dp)
             ) {
                 Text("Déconnexion")
             }
