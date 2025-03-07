@@ -24,16 +24,6 @@ fun main() {
         .start(wait = true)
 }
 
-fun addTestUser() {
-    transaction{
-        // Ajouter un utilisateur de test
-        Users.insert {
-            it[login] = "alexis"
-            it[passwordHash] = hashPassword("example")
-        }
-    }
-}
-
 fun initDatabase() {
     // Connecte-toi à la base de données PostgreSQL
     Database.connect(
@@ -110,6 +100,27 @@ fun Application.module() {
             val jsonString = call.receiveText()
             processJson(jsonString)
         }
+
+        get("/data") {
+            val user = call.request.queryParameters["user"]
+            if (user != null) {
+                val result = transaction {
+                    Data.select { Data.userLogin eq user }
+                        .map {
+                            DataModel(
+                                bpm = it[Data.bpm],
+                                temperature = it[Data.temperature],
+                                vitesse = it[Data.vitesse],
+                                time = it[Data.time]
+                            )
+                        }
+                }
+                call.respond(result)
+            } else {
+                call.respond(HttpStatusCode.BadRequest, "Utilisateur manquant")
+            }
+        }
+
 
         get("/") {
             // Simuler la récupération des données

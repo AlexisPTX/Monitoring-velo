@@ -1,8 +1,14 @@
 package alexis.rioc.proje_iot
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.AlertDialog
+import androidx.compose.material.Button
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -13,7 +19,7 @@ fun MyChart(
     bpm: List<Pair<Float, Float>>,
     temperature: List<Pair<Float, Float>>,
     speed: List<Pair<Float, Float>>,
-    selectedOption: DateRangeOption,
+    selectedOption: DateRangeOption
 ) {
     if (bpm.isEmpty() || temperature.isEmpty() || speed.isEmpty()) return
 
@@ -34,16 +40,18 @@ fun MyChart(
             .fillMaxHeight(0.8f)
             .padding(16.dp)
     ) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
+        Canvas(
+            modifier = Modifier
+                .weight(1f) // Permet à la Canvas de prendre la majorité de l'espace
+                .fillMaxWidth()
+        ) {
             val width = size.width
             val height = size.height
             val stepX = width / xAxisLabels
             val stepY = height / maxY
 
-            // Fonction pour dessiner une courbe
             fun drawLineSegments(data: List<Pair<Float, Float>>, color: Color) {
                 if (data.isNotEmpty()) {
-                    // Dessiner les segments de droite
                     data.windowed(2) { pair ->
                         val (start, end) = pair
                         val startX = start.first * stepX
@@ -55,13 +63,12 @@ fun MyChart(
                             color = color,
                             start = Offset(startX, startY),
                             end = Offset(endX, endY),
-                            strokeWidth = 4f // Appliquer l'épaisseur
+                            strokeWidth = 5f
                         )
                     }
                 }
             }
 
-            // Dessiner les lignes
             drawLineSegments(bpm, Color.Blue)
             drawLineSegments(temperature, Color.Red)
             drawLineSegments(speed, Color.Green)
@@ -71,8 +78,7 @@ fun MyChart(
                 drawLine(
                     start = Offset(i * stepX, height),
                     end = Offset(i * stepX, height - 10f),
-                    color = Color.Black,
-                    strokeWidth = 2f // Définir l'épaisseur pour les axes si nécessaire
+                    color = Color.Black
                 )
             }
 
@@ -82,10 +88,38 @@ fun MyChart(
                 drawLine(
                     start = Offset(0f, y),
                     end = Offset(10f, y),
-                    color = Color.Black,
-                    strokeWidth = 2f // Définir l'épaisseur pour les axes si nécessaire
+                    color = Color.Black
                 )
             }
         }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            LegendItem(color = Color.Blue, label = "BPM")
+            LegendItem(color = Color.Red, label = "Température")
+            LegendItem(color = Color.Green, label = "Vitesse")
+        }
+    }
+
+}
+
+@Composable
+fun LegendItem(color: Color, label: String) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(12.dp)
+                .background(color)
+        )
+        Text(label, style = MaterialTheme.typography.body2)
     }
 }

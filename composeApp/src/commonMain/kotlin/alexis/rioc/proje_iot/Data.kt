@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.AlertDialog
 import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.Icon
@@ -27,18 +28,27 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import at.maximilianproell.multiplatformchart.common.AxisConfigDefaults
-import at.maximilianproell.multiplatformchart.linechart.LineChart
-import at.maximilianproell.multiplatformchart.linechart.config.LineConfigDefaults
-import at.maximilianproell.multiplatformchart.linechart.model.DataPoint
-import at.maximilianproell.multiplatformchart.linechart.model.LineDataSet
+import io.ktor.client.HttpClient
+import io.ktor.client.call.body
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.request.get
+import io.ktor.client.request.header
+import io.ktor.client.request.parameter
+import io.ktor.client.statement.HttpResponse
+import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
+import io.ktor.serialization.kotlinx.json.json
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atTime
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
-import kotlin.random.Random
+import kotlinx.serialization.json.Json
+import androidx.compose.runtime.LaunchedEffect
+import kotlinx.datetime.Instant
+import kotlinx.datetime.LocalDateTime
 
 enum class DateRangeOption {
     Month, Week
@@ -50,9 +60,24 @@ fun DataScreen() {
     var currentDate by remember { mutableStateOf(Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())) }
 
     // Crée des variables d'état pour stocker les données générées
-    var bpmData by remember { mutableStateOf(generateData(selectedOption, currentDate)) }
-    var temperatureData by remember { mutableStateOf(generateData(selectedOption, currentDate)) }
-    var speedData by remember { mutableStateOf(generateData(selectedOption, currentDate)) }
+    var bpmData by remember { mutableStateOf(emptyList<Pair<Float, Float>>()) }
+    var temperatureData by remember { mutableStateOf(emptyList<Pair<Float, Float>>()) }
+    var speedData by remember { mutableStateOf(emptyList<Pair<Float, Float>>()) }
+
+    var showDialog by remember { mutableStateOf(false) }
+    var dialogMessage by remember { mutableStateOf("") }
+
+    LaunchedEffect(selectedOption, currentDate) {
+        val result = fetchData("alexis", currentDate, selectedOption)
+
+        if (result.isNotEmpty()) {
+            bpmData = result.mapIndexed { index, data -> index.toFloat() to data.bpm.toFloat() }
+            temperatureData = result.mapIndexed { index, data -> index.toFloat() to data.temperature.toFloat() }
+            speedData = result.mapIndexed { index, data -> index.toFloat() to data.vitesse.toFloat() }
+        }
+        showDialog = true
+    }
+
 
     Column(
         modifier = Modifier.fillMaxHeight(),
@@ -64,33 +89,32 @@ fun DataScreen() {
         // Sélection de l'option de date (semaine/mois)
         TabSelector(selectedOption) { option ->
             selectedOption = option
-            currentDate = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
-            // Met à jour les données lorsque l'option change
-            bpmData = generateData(selectedOption, currentDate)
-            temperatureData = generateData(selectedOption, currentDate)
-            speedData = generateData(selectedOption, currentDate)
         }
 
         // Navigation des dates
         NavigationButtons(selectedOption, currentDate) { newDate ->
             currentDate = newDate
-            bpmData = generateData(selectedOption, currentDate)  // Met à jour les données
-            temperatureData = generateData(selectedOption, currentDate)
-            speedData = generateData(selectedOption, currentDate)
         }
 
         // Affiche le graphique avec les données mises à jour
         MyChart(bpmData, temperatureData, speedData, selectedOption)
+
+        if (showDialog) {
+            ShowAlertDialog(
+                message = dialogMessage,
+                onDismiss = { showDialog = false }
+            )
+        }
     }
 }
 
 @Composable
 fun NavigationButtons(
     selectedOption: DateRangeOption,
-    currentDate: kotlinx.datetime.LocalDateTime,
-    onDateChange: (kotlinx.datetime.LocalDateTime) -> Unit
+    currentDate: LocalDateTime,
+    onDateChange: (LocalDateTime) -> Unit
 ) {
-    val minDate = kotlinx.datetime.LocalDateTime(2024, 1, 1, 0, 0)
+    val minDate = LocalDateTime(2024, 1, 1, 0, 0)
     val maxDate = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
 
     Row(
@@ -183,13 +207,65 @@ fun TabSelector(selectedOption: DateRangeOption, onOptionSelected: (DateRangeOpt
     }
 }
 
-fun generateData(option: DateRangeOption, date: kotlinx.datetime.LocalDateTime): List<Pair<Float, Float>> {
-    return when (option) {
-        DateRangeOption.Week -> {
-            List(7) { index -> (index + 1).toFloat() to Random.nextFloat() * 10 }
-        }
-        DateRangeOption.Month -> {
-            List(30) { index -> (index + 1).toFloat() to Random.nextFloat() * 10 }
+suspend fun fetchData(userLogin: String, chosenDate: LocalDateTime, selectedOption: DateRangeOption): List<DataModel> {
+    val client = HttpClient {
+        install(ContentNegotiation) {
+            json(Json { ignoreUnknownKeys = true })
         }
     }
+    try {
+        val response: HttpResponse = client.get("http://$IP_MACHINE:8080/data") {
+            header(HttpHeaders.ContentType, ContentType.Application.Json)
+            parameter("user", userLogin)
+        }
+
+        if (response.status == HttpStatusCode.OK) {
+            val result = response.body<List<DataModel>>()
+            val timeZone = TimeZone.currentSystemDefault()
+            val (startDate, endDate) = getDateRange(selectedOption, chosenDate)
+
+            return result.filter {
+                val instant = Instant.fromEpochSeconds(it.time)
+                val date = instant.toLocalDateTime(timeZone).date
+                date in startDate..endDate
+            }
+        }
+    } catch (e: Exception) {
+        println("Erreur: $e")
+    }
+    return emptyList()
+}
+
+fun getDateRange(selectedOption: DateRangeOption, chosenDate: LocalDateTime): Pair<kotlinx.datetime.LocalDate, kotlinx.datetime.LocalDate> {
+    return when (selectedOption) {
+        DateRangeOption.Month -> {
+            val firstDay = chosenDate.date.minus(kotlinx.datetime.DatePeriod(days = chosenDate.date.dayOfMonth - 1))
+            val lastDay = firstDay.plus(kotlinx.datetime.DatePeriod(months = 1)).minus(kotlinx.datetime.DatePeriod(days = 1))
+            Pair(firstDay, lastDay)
+        }
+        DateRangeOption.Week -> {
+            val firstDay = chosenDate.date.minus(kotlinx.datetime.DatePeriod(days = chosenDate.date.dayOfWeek.ordinal))
+            val lastDay = firstDay.plus(kotlinx.datetime.DatePeriod(days = 6))
+            Pair(firstDay, lastDay)
+        }
+    }
+}
+
+
+@Composable
+fun ShowAlertDialog(message: String, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(text = "Message")
+        },
+        text = {
+            Text(text = message)
+        },
+        confirmButton = {
+            Button(onClick = onDismiss) {
+                Text("OK")
+            }
+        }
+    )
 }
