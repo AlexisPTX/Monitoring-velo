@@ -2,10 +2,7 @@ package alexis.rioc.proje_iot
 
 import kotlinx.serialization.Serializable
 
-//const val IP_MACHINE = "10.114.44.180"  //Ecole
-//const val IP_MACHINE = "192.168.1.125"  //Corbie
-const val IP_MACHINE = "192.168.1.21" //Berck
-//const val IP_MACHINE = "192.0.0.2"  //iPhone
+const val IP_MACHINE = "10.114.44.180"  //Ecole
 const val SERVER_PORT = 8080
 
 enum class DateRangeOption {

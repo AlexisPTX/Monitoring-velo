@@ -3,8 +3,6 @@ package alexis.rioc.proje_iot
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.AlertDialog
-import androidx.compose.material.Button
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -38,12 +36,12 @@ fun MyChart(
         modifier = Modifier
             .fillMaxWidth(0.9f)
             .fillMaxHeight(0.8f)
-            .padding(16.dp)
+            .padding(5.dp)
     ) {
         Canvas(
             modifier = Modifier
                 .weight(1f) // Permet à la Canvas de prendre la majorité de l'espace
-                .fillMaxWidth()
+                .fillMaxWidth(0.9f)
         ) {
             val width = size.width
             val height = size.height
@@ -97,7 +95,7 @@ fun MyChart(
 
         Row(
             modifier = Modifier
-                .fillMaxWidth()
+                .fillMaxWidth(0.9f)
                 .padding(top = 8.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {

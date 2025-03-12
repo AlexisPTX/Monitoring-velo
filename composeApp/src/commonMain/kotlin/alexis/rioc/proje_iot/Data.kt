@@ -68,14 +68,12 @@ fun DataScreen() {
     var dialogMessage by remember { mutableStateOf("") }
 
     LaunchedEffect(selectedOption, currentDate) {
-        val result = fetchData("alexis", currentDate, selectedOption)
-
+        val result = fetchData(SessionManager.userLogin, currentDate, selectedOption)
         if (result.isNotEmpty()) {
             bpmData = result.mapIndexed { index, data -> index.toFloat() to data.bpm.toFloat() }
             temperatureData = result.mapIndexed { index, data -> index.toFloat() to data.temperature.toFloat() }
             speedData = result.mapIndexed { index, data -> index.toFloat() to data.vitesse.toFloat() }
         }
-        showDialog = true
     }
 
 
